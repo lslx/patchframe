@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "patchframe", "patchframe\pa
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ldr", "ldr\ldr.vcxproj", "{2681AAAD-1929-4AB5-9741-ED7F7D6E7D96}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LdrEx", "LdrEx\LdrEx.vcxproj", "{358881A7-9FBB-463B-A58E-2C20DA75D818}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -21,6 +23,10 @@ Global
 		{2681AAAD-1929-4AB5-9741-ED7F7D6E7D96}.Debug|Win32.Build.0 = Debug|Win32
 		{2681AAAD-1929-4AB5-9741-ED7F7D6E7D96}.Release|Win32.ActiveCfg = Release|Win32
 		{2681AAAD-1929-4AB5-9741-ED7F7D6E7D96}.Release|Win32.Build.0 = Release|Win32
+		{358881A7-9FBB-463B-A58E-2C20DA75D818}.Debug|Win32.ActiveCfg = Debug|Win32
+		{358881A7-9FBB-463B-A58E-2C20DA75D818}.Debug|Win32.Build.0 = Debug|Win32
+		{358881A7-9FBB-463B-A58E-2C20DA75D818}.Release|Win32.ActiveCfg = Release|Win32
+		{358881A7-9FBB-463B-A58E-2C20DA75D818}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

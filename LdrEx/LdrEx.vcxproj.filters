@@ -24,30 +24,12 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="VMQuery.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\MemoryModule.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="..\common\Tools.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="ldr.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="VMQuery.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\MemoryModule.c">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="..\common\Tools.cpp">
+    <ClCompile Include="LdrEx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
