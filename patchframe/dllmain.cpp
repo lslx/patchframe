@@ -13,6 +13,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 		void StartRun(LPVOID lpReserved);
 		//StartRun(lpReserved);
 		StartRun((LPVOID)0x400000);
+		break;
 	}
 
 	case DLL_THREAD_ATTACH:

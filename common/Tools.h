@@ -12,6 +12,8 @@ extern "C" {
 	bool WriteFileAdd(char* pBuf, long size, char* fileName);
 	void* File2Buffer(long* pSize, const char* strPath);
 
+	char* GetRefLdrOffset(char* pRawData, char* lpFunName);
+
 #ifdef __cplusplus
 }
 #endif

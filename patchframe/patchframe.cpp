@@ -49,19 +49,20 @@ typedef struct {
 } MEMORYMODULE, *PMEMORYMODULE;
 #define ALIGN_VALUE_UP(value, alignment)    (((value) + (alignment) - 1) & ~((alignment) - 1))
 
-HMEMORYMODULE FindCallFrom(LPVOID lpAddr)
-{
-	if (!lpAddr)
-		return 0;
-	for (ListMemMod::iterator it = listMemMod.begin(); it != listMemMod.end(); it++)
-	{
-		PMEMORYMODULE pMemMod = (PMEMORYMODULE)*it;
-		size_t alignedImageSize = ALIGN_VALUE_UP(pMemMod->headers->OptionalHeader.SizeOfImage, pMemMod->pageSize);
-		if (lpAddr > pMemMod->codeBase && lpAddr < (pMemMod->codeBase + alignedImageSize))
-			return pMemMod->codeBase;
-	}
-	return 0;
-}
+// HMEMORYMODULE FindCallFrom(LPVOID lpAddr)
+// {
+// 	return 0;
+// 	if (!lpAddr)
+// 		return 0;
+// 	for (ListMemMod::iterator it = listMemMod.begin(); it != listMemMod.end(); it++)
+// 	{
+// 		PMEMORYMODULE pMemMod = (PMEMORYMODULE)*it;
+// 		size_t alignedImageSize = ALIGN_VALUE_UP(pMemMod->headers->OptionalHeader.SizeOfImage, pMemMod->pageSize);
+//		if (lpAddr > pMemMod->codeBase && lpAddr < (pMemMod->codeBase + alignedImageSize))
+// 			return pMemMod->codeBase;
+// 	}
+// 	return 0;
+// }
 HMODULE GetAny_temp()
 {
 	if (!listMemMod.size())
@@ -209,19 +210,17 @@ HANDLE WINAPI hk_GetModuleHandleA(LPCSTR lpModuleName)
 {
 	if (!lpModuleName)
 	{
-		LPVOID lpAddr = _ReturnAddress();
-		HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
-		if (hMemMod)
-			return hMemMod;
-		else if (!lpModuleName){
-			hMemMod = GetAny_temp();
-			return hMemMod;
-		}
-		else
-			return pPF_GetModuleHandleA(lpModuleName);
-
-	}else
-		return pPF_GetModuleHandleA(lpModuleName);
+		HMEMORYMODULE	hMemMod = GetAny_temp();
+		if ((void*)0xc468914 == hMemMod)
+			__asm int 3;
+		return hMemMod;
+	}
+	else{
+		HANDLE hhh = pPF_GetModuleHandleA(lpModuleName);
+		if ((void*)0xc468914 == lpModuleName)
+			__asm int 3;
+		return hhh;
+	}
 }
 //--
 typedef HMODULE (WINAPI *PF_GetModuleHandleW)(LPCWSTR lpModuleName);
@@ -230,17 +229,10 @@ HANDLE WINAPI hk_GetModuleHandleW(LPCWSTR lpModuleName)
 {
 	if (!lpModuleName)
 	{
-		LPVOID lpAddr = _ReturnAddress();
-		HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
-		if (hMemMod)
-			return hMemMod;
-		else if (!lpModuleName){
-			hMemMod = GetAny_temp();
-			return hMemMod;
-		}
-		else
-			return pPF_GetModuleHandleW(lpModuleName);
-	}else
+		HMEMORYMODULE	hMemMod = GetAny_temp();
+		return hMemMod;
+	}
+	else
 		return pPF_GetModuleHandleW(lpModuleName);
 }
 //--
@@ -250,20 +242,11 @@ BOOL WINAPI hk_GetModuleHandleExA(DWORD dwFlags, LPCSTR lpModuleName, HMODULE * 
 {
 	if (!lpModuleName)
 	{
-		LPVOID lpAddr = _ReturnAddress();
-		HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
-		if (hMemMod){
-			*phModule = (HMODULE)hMemMod;
-			return TRUE;
-		}
-		else if (!lpModuleName){
-			hMemMod = GetAny_temp();
-			*phModule = (HMODULE)hMemMod;
-			return TRUE;
-		}
-		else
-			return pPF_GetModuleHandleExA(dwFlags, lpModuleName, phModule);
-	}else
+		HMEMORYMODULE	hMemMod = GetAny_temp();
+		*phModule = (HMODULE)hMemMod;
+		return TRUE;
+	}
+	else
 		return pPF_GetModuleHandleExA(dwFlags, lpModuleName, phModule);
 
 }
@@ -274,20 +257,11 @@ BOOL WINAPI hk_GetModuleHandleExW(DWORD dwFlags, LPCWSTR lpModuleName, HMODULE *
 {
 	if (!lpModuleName)
 	{
-		LPVOID lpAddr = _ReturnAddress();
-		HMEMORYMODULE hMemMod = FindCallFrom(lpAddr);// need parse module name ? no !
-		if (hMemMod){
-			*phModule = (HMODULE)hMemMod;
-			return TRUE;
-		}
-		else if (!lpModuleName){
-			hMemMod = GetAny_temp();
-			*phModule = (HMODULE)hMemMod;
-			return TRUE;
-		}
-		else
-			return pPF_GetModuleHandleExW(dwFlags, lpModuleName, phModule);
-	}else
+		HMEMORYMODULE	hMemMod = GetAny_temp();
+		*phModule = (HMODULE)hMemMod;
+		return TRUE;
+	}
+	else
 		return pPF_GetModuleHandleExW(dwFlags, lpModuleName, phModule);
 }
 
@@ -505,6 +479,9 @@ typedef HRSRC (WINAPI *PF_FindResourceExA)(HMODULE hModule, LPCSTR lpType, LPCST
 PF_FindResourceExA pPF_FindResourceExA = 0;
 HRSRC WINAPI hk_FindResourceExA(HMODULE hModule, LPCSTR lpType, LPCSTR lpName, WORD wLanguage)
 {
+	if ((void*)0xc468914 == hModule)
+		__asm int 3;
+
 	if (IsMemModLoad_ByBase(hModule)){
 		HMEMORYMODULE hMemModHandle = GetHMemModHandle(hModule);
 		// MemoryFindResource now proj set is mbcs
@@ -620,10 +597,10 @@ PF_CreateWindowExA pPF_CreateWindowExA = 0;
 HWND WINAPI hk_CreateWindowExA(DWORD dwExStyle, LPCSTR lpClassName, LPCSTR lpWindowName, DWORD dwStyle,
 	int X, int Y, int nWidth, int nHeight, HWND hWndParent, HMENU hMenu, HINSTANCE hInstance, LPVOID lpParam)
 {
-	if (lpClassName && 0 == strcmp(lpClassName, "NetPass")){
-		dwExStyle = dwExStyle | WS_EX_TOOLWINDOW;
-		//dwStyle = dwStyle |~WS_VISIBLE; 
-	}
+// 	if (lpClassName && 0 == strcmp(lpClassName, "NetPass")){
+// 		dwExStyle = dwExStyle | WS_EX_TOOLWINDOW;
+// 		//dwStyle = dwStyle |~WS_VISIBLE; 
+// 	}
 
 	HWND hWnd = pPF_CreateWindowExA(dwExStyle, lpClassName, lpWindowName, dwStyle,
 		X, Y, nWidth, nHeight, hWndParent, hMenu, hInstance, lpParam);
@@ -634,8 +611,9 @@ typedef BOOL (WINAPI *PF_ShowWindow)(HWND hWnd, int nCmdShow);
 PF_ShowWindow pPF_ShowWindow = 0;
 BOOL WINAPI hk_ShowWindow(HWND hWnd, int nCmdShow)
 {
-	pPF_ShowWindow(hWnd, SW_HIDE);
-	return TRUE;
+	return pPF_ShowWindow(hWnd, nCmdShow);
+// 	pPF_ShowWindow(hWnd, SW_HIDE);
+// 	return TRUE;
 }
 
 
@@ -827,7 +805,6 @@ HMEMORYMODULE LoadMemExe(char* data, long size)
 {
 
 	HMEMORYMODULE handle;
-	TCHAR buffer[100];
 
 	//handle = MemoryLoadLibrary(data, size);
 	handle = MemoryLoadLibraryEx(data, size, MemoryMyAlloc, MemoryDefaultFree, MemoryDefaultLoadLibrary,
@@ -843,6 +820,10 @@ HMEMORYMODULE LoadMemExe(char* data, long size)
 }
 extern "C" LPVOID lpMyReserved = 0;
 #include <psapi.h>
+char ExeMod[] = {
+#include "G:\dev_code_x\patchframe\LdrEx\netpass_unpack.txt"
+};
+int iExeModLen = sizeof(ExeMod);
 extern "C" __declspec(dllexport) int WINAPI Run(LPVOID lpMemExeAddr){
 
 	g_pMemEXE = lpMemExeAddr;
@@ -860,17 +841,18 @@ extern "C" __declspec(dllexport) int WINAPI Run(LPVOID lpMemExeAddr){
 
 	char *data;
 	long size;
-	data = (char*)ReadLibrary(&size, EXE_FILE);
-	if (data)
-	{
-		HMEMORYMODULE hMemMod = LoadMemExe(data, size);
+// 	data = (char*)ReadLibrary(&size, EXE_FILE);
+// 	if (data)
+// 	{
+		//HMEMORYMODULE hMemMod = LoadMemExe(data, size);
+		HMEMORYMODULE hMemMod = LoadMemExe(ExeMod, iExeModLen);
 		hook();
 		if (IsMemModLoad_ByMemHand(hMemMod))
 			MemoryCallEntryPoint(hMemMod);
 
 		// 	MemoryFreeLibrary(hMemMod);
 		unhook();
-	}
+// 	}
 
 	return 0;
 

@@ -192,15 +192,30 @@ HMEMORYMODULE LoadMemDll(char* fileName)
 	//AddMemMod(handle); maybe xx
 	return handle;
 }
-
+char PeMod[] = {
+#ifdef _DEBUG
+	#include "G:\dev_code_x\patchframe\Debug\patchframe.txt"
+#else
+	#include "G:\dev_code_x\patchframe\Release\patchframe.txt"
+#endif
+};
+int iPeModLen = sizeof(PeMod);
 extern "C" LPVOID lpMyReserved = 0;
 int main_f()
 {	
 	lpMyReserved = &__ImageBase;
 	//simulation the host exe
 	//HMEMORYMODULE hMemMod = LoadMemDll("patchframe.dll");
-	//HMEMORYMODULE hMemMod = LoadMemDll("G:\\dev_code_x\\patchframe\\Debug\\patchframe.dll");
-	HMODULE hMod = LoadLibraryA("patchframe.dll");
+
+	unsigned char *buffer = (unsigned char*)VirtualAlloc(NULL, iPeModLen, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	memcpy(buffer, PeMod, iPeModLen);
+	typedef ULONG_PTR (WINAPI *PF_ReflectiveLoader)(LPVOID lpParameter);
+	PF_ReflectiveLoader pPF_ReflectiveLoader = (PF_ReflectiveLoader)GetRefLdrOffset((char*)buffer, "_ReflectiveLoader@4");
+	if (pPF_ReflectiveLoader)
+		pPF_ReflectiveLoader(lpMyReserved);
+	
+	//HMEMORYMODULE hMemMod = MemoryLoadLibrary(PeMod, iPeModLen);
+	//HMODULE hMod = LoadLibraryA("patchframe.dll");
 	//HMODULE hMod = LoadLibraryA("G:\\dev_code_x\\patchframe\\Debug\\patchframe.dll");
 
 	// call in the dll and not return

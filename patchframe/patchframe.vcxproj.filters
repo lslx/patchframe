@@ -16,6 +16,9 @@
     <Filter Include="源文件\detours">
       <UniqueIdentifier>{751e1715-5199-4a9a-a786-4152df81eacd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="refldr">
+      <UniqueIdentifier>{7e47dd29-2340-43b9-9ed0-ab73f954f197}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -38,6 +41,12 @@
     </ClInclude>
     <ClInclude Include="..\common\Tools.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ReflectiveDLLInjection.h">
+      <Filter>refldr</Filter>
+    </ClInclude>
+    <ClInclude Include="ReflectiveLoader.h">
+      <Filter>refldr</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -71,8 +80,11 @@
     <ClCompile Include="..\common\Tools.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="exedata.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="ReflectiveDll.c">
+      <Filter>refldr</Filter>
+    </ClCompile>
+    <ClCompile Include="ReflectiveLoader.c">
+      <Filter>refldr</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
