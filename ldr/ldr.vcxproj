@@ -63,6 +63,7 @@
       <BaseAddress>0x400000</BaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
